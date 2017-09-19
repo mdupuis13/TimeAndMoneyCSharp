@@ -1,7 +1,9 @@
 # TimeAndMoneyCSharp
-CSharp version of the Time and Money project by Martin Fowler and Eric Evans that was rescued by [neuhalje](https://github.com/neuhalje/TimeAndMoney).
+`C#` version of the Time and Money project by Martin Fowler and Eric Evans that was rescued by [neuhalje](https://github.com/neuhalje/TimeAndMoney).
 
-_I 'rescued' this from [SourceForge](http://timeandmoney.sourceforge.net/) and removed some of the crust (Junit3, Ant, slight polishing). The [original work](readme/credits.txt) has mostly been done by Eric Evans and Martin Fowler_.
+Some translation had to be made to account for the differences between `java` and `C#`. In those cases, the choice was made to adhere to the principle of [least astonishment](https://en.wikipedia.org/wiki/Principle_of_least_astonishment).
+
+_I 'rescued' this from [SourceForge](http://timeandmoney.sourceforge.net/) and removed some of the crust (Junit3, Ant, slight polishing). The [original work](readme/credits.txt) has mostly been done by Eric Evans and Martin Fowler_. -- neuhalje
 
 Time and Money Code Library
 ==============================
