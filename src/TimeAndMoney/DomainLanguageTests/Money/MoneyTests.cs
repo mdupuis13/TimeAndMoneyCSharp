@@ -1,15 +1,16 @@
-﻿using System;
+﻿using CSharp.Util.Currency;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
-namespace DomainLanguageTests.Money
+namespace DomainLanguage.Money.Tests
 {
     public class MoneyTests
     {
-        private static Currency USD = Currency.getInstance("USD");
-        private static Currency JPY = Currency.getInstance("JPY");
-        private static Currency EUR = Currency.getInstance("EUR");
+        private static Currency USD = Currency.GetInstance("USD");
+        private static Currency JPY = Currency.GetInstance("JPY");
+        private static Currency EUR = Currency.GetInstance("EUR");
 
         private Money d15;
         private Money d2_51;
@@ -19,18 +20,21 @@ namespace DomainLanguageTests.Money
 
         public MoneyTests()
         {
-            d15 = Money.valueOf(new BigDecimal("15.0"), USD);
-            d2_51 = Money.valueOf(new BigDecimal("2.51"), USD);
-            e2_51 = Money.valueOf(new BigDecimal("2.51"), EUR);
-            y50 = Money.valueOf(new BigDecimal("50"), JPY);
-            d100 = Money.valueOf(new BigDecimal("100.0"), USD);
+            d15 = Money.ValueOf(decimal.Parse("15.0"), USD);
+            d2_51 = Money.ValueOf(decimal.Parse("2.51"), USD);
+            e2_51 = Money.ValueOf(decimal.Parse("2.51"), EUR);
+            y50 = Money.ValueOf(decimal.Parse("50"), JPY);
+            d100 = Money.ValueOf(decimal.Parse("100.0"), USD);
 
         }
 
         [Fact]
-        public void MyTestMethod()
+        public void TestCreationFromDouble()
         {
-
+            Assert.Equal(d15, Money.ValueOf(15.0, USD));
+            Assert.Equal(d2_51, Money.ValueOf(2.51, USD));
+            Assert.Equal(y50, Money.ValueOf(50.1, JPY));
+            Assert.Equal(d100, Money.ValueOf(100D, USD));
         }
     }
 }
