@@ -20,6 +20,7 @@ namespace DomainLanguage.Money
         private decimal amount;
         private Currency currency;
 
+        #region Publics
         /// <summary>
         /// The constructor does not complex computations and requires simple, 
         /// inputs consistent with the class invariant. 
@@ -81,6 +82,90 @@ namespace DomainLanguage.Money
             return Money.ValueOf(rawAmount, currency, roundingMode);
         }
 
+
+        /// <summary>
+        /// WARNING: Because of the indefinite precision of double, thismethod must round off the value.
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public static Money Dollars(double amount)
+        {
+            return Money.ValueOf(amount, USD);
+        }
+
+        /// <summary>
+        /// This creation method is safe to use. It will adjust scale, but will not round off the amount.
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public static Money Dollars(decimal amount)
+        {
+            return Money.ValueOf(amount, USD);
+        }
+
+        public static Money Dollars(int amount)
+        {
+            return Money.ValueOf(new decimal(amount), USD);
+        }
+        /*
+         * How best to handle access to the internals? It is needed for
+         * database mapping, UI presentation, and perhaps a few other
+         * uses. Yet giving public access invites people to do the
+         * real work of the Money object elsewhere.
+         * Here is an experimental approach, giving access with a 
+         * warning label of sorts. Let us know how you like it.
+         */
+        public decimal BreachEncapsulationOfAmount()
+        {
+            return amount;
+        }
+
+        public Currency BreachEncapsulationOfCurrency()
+        {
+            return currency;
+        }
+
+        public Money Negated()
+        {
+            return Money.ValueOf(decimal.Negate(amount), currency);
+        }
+
+        public Money Times(decimal factor)
+        {
+            return Times(factor, DEFAULT_ROUNDING_MODE);
+        }
+
+        /*
+         * TODO: BigDecimal.multiply() scale is sum of scales of two multiplied numbers. So what is scale of times?
+         */
+
+        public Money Times(decimal factor, MidpointRounding roundingMode)
+        {
+            return Money.ValueOf(decimal.Multiply(amount, factor), currency, roundingMode);
+        }
+
+        public Money Times(double amount, MidpointRounding roundingMode)
+        {
+            return Times(new decimal(amount), roundingMode);
+        }
+
+        public Money Times(double amount)
+        {
+            return Times(new decimal(amount));
+        }
+
+        public Money Times(int i)
+        {
+            return Times(new decimal(i));
+        }
+
+        public Money Plus(Money other)
+        {
+            AssertHasSameCurrencyAs(other);
+            return Money.ValueOf(decimal.Add(amount, other.amount), currency);
+        }
+        #endregion
+
         #region IComparable implementation
         public int CompareTo(Money other)
         {
@@ -99,13 +184,23 @@ namespace DomainLanguage.Money
                 hasSameCurrencyAs(other) &&
                 amount.Equals(other.amount);
         }
+        #endregion
 
+        #region Privates
         private bool hasSameCurrencyAs(Money other)
         {
             return currency.Equals(other.currency);
         }
+
+
+        private void AssertHasSameCurrencyAs(Money aMoney)
+        {
+            if (!hasSameCurrencyAs(aMoney))
+                throw new ArgumentException(aMoney.ToString() + " is not same currency as " + this.ToString());
+        }
         #endregion
 
+        #region Public overrides
         public override int GetHashCode()
         {
             return amount.GetHashCode();
@@ -116,6 +211,6 @@ namespace DomainLanguage.Money
             //TODO change GetCurrencyCode for GetSymbol when it is implemented in CSharp.Util.Currency
             return currency.GetCurrencyCode() + " " + amount;
         }
-
+        #endregion
     }
 }

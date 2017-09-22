@@ -11,7 +11,7 @@ namespace DomainLanguage.Base.Tests
     public class RatioTests
     {
         [Fact]
-        public void testDecimalRatio()
+        public void TestDecimalRatio()
         {
             // 3/2
             Ratio r3over2 = Ratio.Of(new decimal(3), new decimal(2));
@@ -46,7 +46,7 @@ namespace DomainLanguage.Base.Tests
         }
 
         [Fact]
-        public void testLongRatio()
+        public void TestLongRatio()
         {
             // 3/2
             Ratio r3over2 = Ratio.Of(3, 2);
@@ -77,7 +77,7 @@ namespace DomainLanguage.Base.Tests
         }
 
         [Fact]
-        public void testEquals()
+        public void TestEquals()
         {
             Ratio.Of(100, 200).Equals(Ratio.Of(100, 200)).Should().BeTrue(); ;
 
@@ -88,7 +88,7 @@ namespace DomainLanguage.Base.Tests
 
 
         [Fact]
-        public void testMultiplyNumerator()
+        public void TestMultiplyNumerator()
         {
             Ratio expected = Ratio.Of(decimal.Parse("9901.1"), new decimal(3000));
 
@@ -99,7 +99,7 @@ namespace DomainLanguage.Base.Tests
         }
 
         [Fact]
-        public void testMultiplyByRatio()
+        public void TestMultiplyByRatio()
         {
             Ratio r1 = Ratio.Of(9001, 3000);
             Ratio r2 = Ratio.Of(3, 2);
@@ -110,7 +110,7 @@ namespace DomainLanguage.Base.Tests
         }
 
         [Fact]
-        public void testToString()
+        public void TestToString()
         {
             string expected = "9001/3000";
 
