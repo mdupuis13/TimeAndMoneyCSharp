@@ -1,7 +1,7 @@
 # TimeAndMoneyCSharp
 `C#` version of the Time and Money project by Martin Fowler and Eric Evans that was rescued by [neuhalje](https://github.com/neuhalje/TimeAndMoney).
 
-Some translation had to be made to account for the differences between `java` and `C#`. In those cases, the choice was made to adhere to the principle of [least astonishment](https://en.wikipedia.org/wiki/Principle_of_least_astonishment).
+Some translation had to be made to account for the differences between `java` and `C#`. In those cases, the choice was made to adhere to the principle of [least astonishment](https://en.wikipedia.org/wiki/Principle_of_least_astonishment). The translation has also been made to adhere more closely to the standards used in the `C#` and `.Net` library.
 
 _I 'rescued' this from [SourceForge](http://timeandmoney.sourceforge.net/) and removed some of the crust (Junit3, Ant, slight polishing). The [original work](readme/credits.txt) has mostly been done by Eric Evans and Martin Fowler_. -- neuhalje
 
