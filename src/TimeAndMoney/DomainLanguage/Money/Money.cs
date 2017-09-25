@@ -6,7 +6,9 @@
 using CSharp.Util.Currency;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
+using System.Threading;
 
 namespace DomainLanguage.Money
 {
@@ -15,7 +17,7 @@ namespace DomainLanguage.Money
         private static readonly Currency CAD = Currency.GetInstance("CAD");
         private static readonly Currency EUR = Currency.GetInstance("EUR");
         private static readonly Currency USD = Currency.GetInstance("USD");
-        private static readonly MidpointRounding DEFAULT_ROUNDING_MODE = MidpointRounding.AwayFromZero;
+        private static readonly MidpointRounding DEFAULT_ROUNDING_MODE = MidpointRounding.ToEven;
 
         private decimal amount;
         private Currency currency;
@@ -31,9 +33,10 @@ namespace DomainLanguage.Money
         public Money(decimal amount, Currency currency)
         {
             this.currency = currency;
-            this.amount = decimal.Round(amount, currency.GetDefaultFractionDigits(), MidpointRounding.AwayFromZero);
+            this.amount = decimal.Round(amount, currency.GetDefaultFractionDigits(), DEFAULT_ROUNDING_MODE);
         }
 
+        #region Public Static
         /// <summary>
         /// This creation method is safe to use. It will adjust scale, but will not round off the amount.
         /// </summary>
@@ -42,7 +45,7 @@ namespace DomainLanguage.Money
         /// <returns></returns>
         public static Money ValueOf(decimal amount, Currency currency)
         {
-            return Money.ValueOf(amount, currency, MidpointRounding.AwayFromZero);
+            return Money.ValueOf(amount, currency, DEFAULT_ROUNDING_MODE);
         }
 
         /// <summary>
@@ -64,9 +67,9 @@ namespace DomainLanguage.Money
         /// <param name="dblAmount"></param>
         /// <param name="currency"></param>
         /// <returns></returns>
-        public static Money ValueOf(double dblAmount, Currency currency)
+        public static Money ValueOf(double amount, Currency currency)
         {
-            return Money.ValueOf(dblAmount, currency, DEFAULT_ROUNDING_MODE);
+            return Money.ValueOf(amount, currency, DEFAULT_ROUNDING_MODE);
         }
 
         /// <summary>
@@ -76,19 +79,20 @@ namespace DomainLanguage.Money
         /// <param name="currency"></param>
         /// <param name="roundingMode"></param>
         /// <returns></returns>
-        public static Money ValueOf(double dblAmount, Currency currency, MidpointRounding roundingMode)
+        public static Money ValueOf(double amount, Currency currency, MidpointRounding roundingMode)
         {
-            decimal rawAmount = new decimal(dblAmount);
+            decimal rawAmount = new decimal(amount);
             return Money.ValueOf(rawAmount, currency, roundingMode);
+            
         }
 
-
+        #region Factory methods for oft-used currencies
         /// <summary>
         /// WARNING: Because of the indefinite precision of double, thismethod must round off the value.
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
-        public static Money Dollars(double amount)
+        public static Money USDollars(double amount)
         {
             return Money.ValueOf(amount, USD);
         }
@@ -98,15 +102,54 @@ namespace DomainLanguage.Money
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
-        public static Money Dollars(decimal amount)
+        public static Money USDollars(decimal amount)
         {
             return Money.ValueOf(amount, USD);
         }
 
-        public static Money Dollars(int amount)
+        /// <summary>
+        /// WARNING: Because of the indefinite precision of double, thismethod must round off the value.
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public static Money CADollars(double amount)
         {
-            return Money.ValueOf(new decimal(amount), USD);
+            return Money.ValueOf(amount, CAD);
         }
+
+        /// <summary>
+        /// This creation method is safe to use. It will adjust scale, but will not round off the amount.
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public static Money CADollars(decimal amount)
+        {
+            return Money.ValueOf(amount, CAD);
+        }
+
+        /// <summary>
+        /// WARNING: Because of the indefinite precision of double, thismethod must round off the value.
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public static Money Euros(double amount)
+        {
+            return Money.ValueOf(amount, EUR);
+        }
+
+        /// <summary>
+        /// This creation method is safe to use. It will adjust scale, but will not round off the amount.
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public static Money Euros(decimal amount)
+        {
+            return Money.ValueOf(amount, EUR);
+        }
+        #endregion
+
+        #endregion
+
         /*
          * How best to handle access to the internals? It is needed for
          * database mapping, UI presentation, and perhaps a few other
@@ -164,38 +207,83 @@ namespace DomainLanguage.Money
             AssertHasSameCurrencyAs(other);
             return Money.ValueOf(decimal.Add(amount, other.amount), currency);
         }
-        #endregion
 
-        #region IComparable implementation
+        public decimal GetAmount()
+        {
+            return amount;
+        }
+
+        public Currency GetCurrency()
+        {
+            return currency;
+        }
+
+        public bool IsGreaterThan(Money other)
+        {
+            return (CompareTo(other) > 0);
+        }
+
+        public bool IsLessThan(Money other)
+        {
+            return (CompareTo(other) < 0);
+        }
+
+        public int CompareTo(Object other)
+        {
+            return CompareTo((Money)other);
+        }
+
+        // IComparable implementation
         public int CompareTo(Money other)
         {
-            if (!hasSameCurrencyAs(other))
+            if (!HasSameCurrencyAs(other))
                 throw new ArgumentException("Compare is not defined between different currencies");
 
             return amount.CompareTo(other.amount);
         }
+
+        //  TODO: Provide some currency-dependent formatting. Java 1.4 Currency doesn't do it.
+        //  public String formatString() {
+        //      return currency.formatString(amount());
+        //  }
+        //  public String localString() {
+        //      return currency.getFormat().format(amount());
+        //  }
         #endregion
 
+
         #region IEquatable implementation
+        public override bool Equals(Object other)
+        {
+            try
+            {
+                return Equals((Money)other);
+            }
+            catch (InvalidCastException)
+            {
+                return false;
+            }
+
+        }
+
         public bool Equals(Money other)
         {
             return
                 other != null &&
-                hasSameCurrencyAs(other) &&
+                HasSameCurrencyAs(other) &&
                 amount.Equals(other.amount);
         }
         #endregion
 
         #region Privates
-        private bool hasSameCurrencyAs(Money other)
+        private bool HasSameCurrencyAs(Money other)
         {
             return currency.Equals(other.currency);
         }
 
-
         private void AssertHasSameCurrencyAs(Money aMoney)
         {
-            if (!hasSameCurrencyAs(aMoney))
+            if (!HasSameCurrencyAs(aMoney))
                 throw new ArgumentException(aMoney.ToString() + " is not same currency as " + this.ToString());
         }
         #endregion
@@ -206,10 +294,73 @@ namespace DomainLanguage.Money
             return amount.GetHashCode();
         }
 
+        /// <summary>
+        /// Returns a <see cref="System.String"/> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String"/> that represents this instance.
+        /// </returns>
         public override string ToString()
         {
-            //TODO change GetCurrencyCode for GetSymbol when it is implemented in CSharp.Util.Currency
-            return currency.GetCurrencyCode() + " " + amount;
+            var displayCulture = Thread.CurrentThread.CurrentCulture;
+            return DisplayIn(displayCulture, false);
+        }
+
+        /// <summary>
+        /// Displays the current instance as it would appear in the native culture,
+        /// no matter 'where' the context thread is running.
+        /// </summary>
+        /// <returns></returns>
+        public string DisplayNative()
+        {
+            return ToString("c", _currencyInfo.DisplayCulture.NumberFormat);
+        }
+
+        /// <summary>
+        /// Displays the current instance as it would appear in a specified culture.
+        /// </summary>
+        /// <param name="displayCulture">The display culture.</param>
+        /// <returns></returns>
+        public string DisplayIn(CultureInfo displayCulture)
+        {
+            return DisplayIn(displayCulture, true);
+        }
+
+        /// <summary>
+        /// Displays the value of this instance in a non-native culture, preserving
+        /// the characteristics of the native <see cref="CurrencyInfo" /> but respecting 
+        /// target cultural formatting.
+        /// </summary>
+        /// <param name="displayCulture">The culture to display this money in</param>
+        /// <param name="disambiguateMatchingSymbol">If <code>true</code>, if the native culture uses the same currency symbol as the display culture, the ISO currency code is appended to the value to help differentiate the native currency.</param>
+        /// <returns>A value representing this instance in another culture</returns>
+        public string DisplayIn(CultureInfo displayCulture, bool disambiguateMatchingSymbol)
+        {
+            var sb = new StringBuilder();
+
+            var nativeCulture = Currency.DisplayCulture;
+            if (displayCulture == nativeCulture)
+            {
+                return nativeCulture.ToString();
+            }
+
+            var nativeNumberFormat = nativeCulture.NumberFormat;
+            nativeNumberFormat = (NumberFormatInfo)nativeNumberFormat.Clone();
+
+            var displayNumberFormat = displayCulture.NumberFormat;
+            nativeNumberFormat.CurrencyGroupSeparator = displayNumberFormat.CurrencyGroupSeparator;
+            nativeNumberFormat.CurrencyDecimalSeparator = displayNumberFormat.CurrencyDecimalSeparator;
+
+            sb.Append(ToString("c", nativeNumberFormat));
+
+            // If the currency symbol of the display culture matches this money, add the code
+            if (disambiguateMatchingSymbol && nativeNumberFormat.CurrencySymbol.Equals(displayNumberFormat.CurrencySymbol))
+            {
+                var currencyCode = new RegionInfo(nativeCulture.LCID).ISOCurrencySymbol;
+                sb.Append(" ").Append(currencyCode);
+            }
+
+            return sb.ToString();
         }
         #endregion
     }

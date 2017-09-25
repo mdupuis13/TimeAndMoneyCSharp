@@ -35,11 +35,11 @@ namespace DomainLanguage.Base
             return decimal.Round(divResult, scale, roundingRule);
         }
 
-        public override bool Equals(Object anObject)
+        public override bool Equals(Object other)
         {
             try
             {
-                return Equals((Ratio)anObject);
+                return Equals((Ratio)other);
             }
             catch (Exception)
             {
@@ -50,8 +50,9 @@ namespace DomainLanguage.Base
         public bool Equals(Ratio other)
         {
             return
-                other != null &&
-                this.numerator.Equals(other.numerator) && this.denominator.Equals(other.denominator);
+                other != null 
+                && this.numerator.Equals(other.numerator) 
+                && this.denominator.Equals(other.denominator);
         }
 
         public Ratio Times(decimal multiplier)

@@ -18,6 +18,25 @@ namespace DomainLanguage.Base.Tests
             decimal result = r3over2.DecimalValue(1, MidpointRounding.AwayFromZero);
             result.Should().Be(new decimal(1.5), "because 3 divided by 2 equals 1.5");
 
+            // 2/3
+            Ratio r2thirds = Ratio.Of(new decimal(2), new decimal(3));
+            result = r2thirds.DecimalValue(3, MidpointRounding.AwayFromZero);
+            result.Should().Be(new decimal(0.667D), "because 2 divided by 3 equals 0.667");
+
+            result = r2thirds.DecimalValue(3, MidpointRounding.ToEven);
+            result.Should().Be(new decimal(0.667D), "because 2 divided by 3 equals 0.667");
+
+            // 5/11
+            Ratio r5over11 = Ratio.Of(new decimal(5), new decimal(11));
+            result = r5over11.DecimalValue(4, MidpointRounding.AwayFromZero);
+            result.Should().Be(new decimal(0.4545D), "because 5 divided by 11 equals 0.454545");
+
+            result = r5over11.DecimalValue(3, MidpointRounding.AwayFromZero);
+            result.Should().Be(new decimal(0.455D), "because 5 divided by 7 equals 0.455 rounded AwayFromZero to 3 decimals");
+
+            result = r5over11.DecimalValue(3, MidpointRounding.ToEven);
+            result.Should().Be(new decimal(0.455D), "because 5 divided by 7 equals 0.454 rounded ToEven to 3 decimals");
+
             // 10/3
             Ratio r10over3 = Ratio.Of(new decimal(10), new decimal(3));
             result = r10over3.DecimalValue(3, MidpointRounding.AwayFromZero);
