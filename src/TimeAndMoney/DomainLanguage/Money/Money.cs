@@ -14,17 +14,32 @@ namespace DomainLanguage.Money
 {
     public class Money : IEquatable<Money>, IComparable<Money>
     {
-        private static readonly Currency CAD = Currency.GetInstance("CAD");
-        private static readonly Currency EUR = Currency.GetInstance("EUR");
-        private static readonly Currency USD = Currency.GetInstance("USD");
+        private static readonly Currency CAD = Currency.GetByLetterCode("CAD");
+        private static readonly Currency EUR = Currency.GetByLetterCode("EUR");
+        private static readonly Currency USD = Currency.GetByLetterCode("USD");
         private static readonly MidpointRounding DEFAULT_ROUNDING_MODE = MidpointRounding.ToEven;
 
-        private decimal amount;
-        private Currency currency;
+        private decimal _amount;
+        private Currency _currency;
 
         #region Publics
         /// <summary>
-        /// The constructor does not complex computations and requires simple, 
+        /// The constructor does not complex computations and requires simple 
+        /// inputs consistent with the class invariant. 
+        /// 
+        /// It assumes the currency of the CurrentCulture.
+        /// 
+        /// Other creation methods are available for convenience.
+        /// </summary>
+        /// <param name="amount"></param>
+        public Money(decimal amount)
+        {
+            this._currency = Currency.GetByLetterCode(CultureInfo.CurrentCulture.ThreeLetterISOLanguageName);
+            this._amount = decimal.Round(amount, _currency.GetDefaultFractionDigits(), DEFAULT_ROUNDING_MODE);
+        }
+
+        /// <summary>
+        /// The constructor does not complex computations and requires simple 
         /// inputs consistent with the class invariant. 
         /// Other creation methods are available for convenience.
         /// </summary>
@@ -32,8 +47,8 @@ namespace DomainLanguage.Money
         /// <param name="currency"></param>
         public Money(decimal amount, Currency currency)
         {
-            this.currency = currency;
-            this.amount = decimal.Round(amount, currency.GetDefaultFractionDigits(), DEFAULT_ROUNDING_MODE);
+            this._currency = currency;
+            this._amount = decimal.Round(amount, currency.GetDefaultFractionDigits(), DEFAULT_ROUNDING_MODE);
         }
 
         #region Public Static
@@ -160,17 +175,17 @@ namespace DomainLanguage.Money
          */
         public decimal BreachEncapsulationOfAmount()
         {
-            return amount;
+            return _amount;
         }
 
         public Currency BreachEncapsulationOfCurrency()
         {
-            return currency;
+            return _currency;
         }
 
         public Money Negated()
         {
-            return Money.ValueOf(decimal.Negate(amount), currency);
+            return Money.ValueOf(decimal.Negate(_amount), _currency);
         }
 
         public Money Times(decimal factor)
@@ -184,7 +199,7 @@ namespace DomainLanguage.Money
 
         public Money Times(decimal factor, MidpointRounding roundingMode)
         {
-            return Money.ValueOf(decimal.Multiply(amount, factor), currency, roundingMode);
+            return Money.ValueOf(decimal.Multiply(_amount, factor), _currency, roundingMode);
         }
 
         public Money Times(double amount, MidpointRounding roundingMode)
@@ -205,17 +220,17 @@ namespace DomainLanguage.Money
         public Money Plus(Money other)
         {
             AssertHasSameCurrencyAs(other);
-            return Money.ValueOf(decimal.Add(amount, other.amount), currency);
+            return Money.ValueOf(decimal.Add(_amount, other._amount), _currency);
         }
 
         public decimal GetAmount()
         {
-            return amount;
+            return _amount;
         }
 
         public Currency GetCurrency()
         {
-            return currency;
+            return _currency;
         }
 
         public bool IsGreaterThan(Money other)
@@ -239,7 +254,7 @@ namespace DomainLanguage.Money
             if (!HasSameCurrencyAs(other))
                 throw new ArgumentException("Compare is not defined between different currencies");
 
-            return amount.CompareTo(other.amount);
+            return _amount.CompareTo(other._amount);
         }
 
         //  TODO: Provide some currency-dependent formatting. Java 1.4 Currency doesn't do it.
@@ -271,14 +286,14 @@ namespace DomainLanguage.Money
             return
                 other != null &&
                 HasSameCurrencyAs(other) &&
-                amount.Equals(other.amount);
+                _amount.Equals(other._amount);
         }
         #endregion
 
         #region Privates
         private bool HasSameCurrencyAs(Money other)
         {
-            return currency.Equals(other.currency);
+            return _currency.Equals(other._currency);
         }
 
         private void AssertHasSameCurrencyAs(Money aMoney)
@@ -291,7 +306,7 @@ namespace DomainLanguage.Money
         #region Public overrides
         public override int GetHashCode()
         {
-            return amount.GetHashCode();
+            return _amount.GetHashCode();
         }
 
         /// <summary>
@@ -307,13 +322,25 @@ namespace DomainLanguage.Money
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String"/> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String"/> that represents this instance.
+        /// </returns>
+        public string ToString(CultureInfo cultureInfo)
+        {
+            //var displayCulture = Thread.CurrentThread.CurrentCulture;
+            return DisplayIn(cultureInfo);
+        }
+
+        /// <summary>
         /// Displays the current instance as it would appear in the native culture,
         /// no matter 'where' the context thread is running.
         /// </summary>
         /// <returns></returns>
         public string DisplayNative()
         {
-            return ToString("c", _currencyInfo.DisplayCulture.NumberFormat);
+            return DisplayIn(_currency.GetDisplayCulture());
         }
 
         /// <summary>
@@ -338,10 +365,10 @@ namespace DomainLanguage.Money
         {
             var sb = new StringBuilder();
 
-            var nativeCulture = Currency.DisplayCulture;
-            if (displayCulture == nativeCulture)
+            var nativeCulture = _currency.GetDisplayCulture();
+            if (displayCulture.Equals(nativeCulture))
             {
-                return nativeCulture.ToString();
+                disambiguateMatchingSymbol = false;
             }
 
             var nativeNumberFormat = nativeCulture.NumberFormat;
@@ -351,7 +378,7 @@ namespace DomainLanguage.Money
             nativeNumberFormat.CurrencyGroupSeparator = displayNumberFormat.CurrencyGroupSeparator;
             nativeNumberFormat.CurrencyDecimalSeparator = displayNumberFormat.CurrencyDecimalSeparator;
 
-            sb.Append(ToString("c", nativeNumberFormat));
+            sb.Append(_amount.ToString("c", nativeNumberFormat));
 
             // If the currency symbol of the display culture matches this money, add the code
             if (disambiguateMatchingSymbol && nativeNumberFormat.CurrencySymbol.Equals(displayNumberFormat.CurrencySymbol))

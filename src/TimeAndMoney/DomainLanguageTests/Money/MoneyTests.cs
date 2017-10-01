@@ -8,10 +8,10 @@ namespace DomainLanguage.Money.Tests
 {
     public class MoneyTests
     {
-        private static Currency CAD = Currency.GetInstance("CAD");
-        private static Currency USD = Currency.GetInstance("USD");
-        private static Currency JPY = Currency.GetInstance("JPY");
-        private static Currency EUR = Currency.GetInstance("EUR");
+        private static Currency CAD = Currency.GetByLetterCode("CAD");
+        private static Currency USD = Currency.GetByLetterCode("USD");
+        private static Currency JPY = Currency.GetByLetterCode("JPY");
+        private static Currency EUR = Currency.GetByLetterCode("EUR");
 
         private Money c15;
         private Money c2_51;
@@ -62,7 +62,8 @@ namespace DomainLanguage.Money.Tests
         [Fact]
         public void TestYen()
         {
-            Assert.Equal("JPY 50", y50.ToString());
+            Assert.Equal("¥50", y50.ToString());
+            Assert.Equal("¥50 JPY", y50.DisplayIn(new System.Globalization.CultureInfo("jp-JP"), true));
             Money y80 = Money.ValueOf(decimal.Parse("80"), JPY);
             Money y30 = Money.ValueOf(30D, JPY);
             Assert.Equal(y80, y50.Plus(y30));
@@ -148,10 +149,11 @@ namespace DomainLanguage.Money.Tests
         }
 
         [Fact]
-        public void testPrint()
+        public void TestPrint()
         {
-            Assert.Equal("$ 15.00", d15.ToString(System.Globalization.CultureInfo.GetCultureInfo("en-US")));
-            Assert.Equal("USD 15.00", d15.ToString(System.Globalization.CultureInfo.GetCultureInfo("en-UK")));
+            Assert.Equal("$15.00", d15.ToString(System.Globalization.CultureInfo.GetCultureInfo("en-US")));
+            Assert.Equal("$15.00", d15.ToString(System.Globalization.CultureInfo.GetCultureInfo("en-GB")));
+            Assert.Equal("$15.00 USD", d15.ToString(System.Globalization.CultureInfo.GetCultureInfo("en-CA")));
         }
         [Fact]
         public void TestHash()
