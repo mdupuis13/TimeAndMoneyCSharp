@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CSharp.Util.Currency" Version="4.0.1" />
+    <PackageReference Include="CSharp.Util" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
