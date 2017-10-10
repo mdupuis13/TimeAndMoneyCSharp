@@ -2,10 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Info.MartinDupuis.DomainLanguage</AssemblyName>
+    <RootNamespace>Info.MartinDupuis.DomainLanguage</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard2.0\DomainLanguage.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CSharp.Util" Version="1.0.0" />
+    <PackageReference Include="CSharp.Util" Version="1.1.0" />
   </ItemGroup>
 
 </Project>

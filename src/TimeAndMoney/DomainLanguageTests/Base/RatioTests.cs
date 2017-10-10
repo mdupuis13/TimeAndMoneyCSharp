@@ -6,7 +6,7 @@ using FluentAssertions;
 using System;
 using Xunit;
 
-namespace DomainLanguage.Base.Tests
+namespace Info.MartinDupuis.DomainLanguage.Base.Tests
 {
     public class RatioTests
     {
