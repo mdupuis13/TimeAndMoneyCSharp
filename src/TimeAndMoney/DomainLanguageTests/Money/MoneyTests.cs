@@ -1,10 +1,10 @@
-﻿using CSharp.Util.Currency;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using CSharp.Util.Currency;
+using Info.MartinDupuis.DomainLanguage.Base;
 using Xunit;
 
-namespace DomainLanguage.Money.Tests
+namespace Info.MartinDupuis.DomainLanguage.Money.Tests
 {
     public class MoneyTests
     {
@@ -71,9 +71,60 @@ namespace DomainLanguage.Money.Tests
         }
 
         [Fact]
+        public void TestPositiveNegative()
+        {
+            Assert.True(d15.IsPositive());
+            Assert.True(Money.CADollars(-10m).IsNegative());
+            Assert.True(Money.CADollars(0m).IsPositive());
+            Assert.False(Money.CADollars(0m).IsNegative());
+            Assert.True(Money.CADollars(0m).IsZero());
+        }
+
+        [Fact]
         public void TestAdditionOfDifferentCurrencies()
         {            
             Assert.Throws<ArgumentException>(() => d15.Plus(e2_51));
+        }
+
+        [Fact]
+        public void TestMinimumIncrement()
+        {
+            Assert.Equal(Money.ValueOf(0.01, USD), d100.MinimumIncrement());
+            Assert.Equal(Money.ValueOf(1m, JPY), y50.MinimumIncrement());
+        }
+
+        [Fact]
+        public void TestIncremented()
+        {
+            Assert.Equal(Money.USDollars(2.52), d2_51.Incremented());
+            Assert.Equal(Money.ValueOf(51m, JPY), y50.Incremented());
+        }
+
+        [Fact]
+        public void TestAbsolute()
+        {
+            Assert.Equal(Money.CADollars(10m), Money.CADollars(-10m).Abs());
+        }
+
+        [Fact]
+        public void TestSum()
+        {
+            Money expected = new Money(25);
+
+            List<Money> monies = new List<Money>()
+            {
+                new Money(10),
+                new Money(15)
+            };
+
+            Assert.Equal(expected, Money.Sum(monies));
+        }
+
+        [Fact]
+        public void TestSubtraction()
+        {
+            Assert.Equal(Money.USDollars(12.49), d15.Minus(d2_51));
+            Assert.Throws<ArgumentException>(() => c15.Minus(d2_51));
         }
 
         [Fact]
@@ -97,6 +148,29 @@ namespace DomainLanguage.Money.Tests
             Assert.Equal(Money.USDollars(66.67), d100.Times(decimal.Parse("0.666666"), MidpointRounding.ToEven));
             Assert.Equal(Money.USDollars(66.67), d100.Times(decimal.Parse("0.666666"), MidpointRounding.AwayFromZero));
             Assert.Equal(Money.USDollars(-66.67), d100.Negated().Times(decimal.Parse("0.666666"), MidpointRounding.AwayFromZero));
+        }
+
+        [Fact]
+        public void TestDivide()
+        {
+            Assert.Equal(Money.USDollars(33.33), d100.DividedBy(3));
+            Assert.Equal(Money.USDollars(16.67), d100.DividedBy(6));
+        }
+
+        [Fact]
+        public void TestDivisionByMoney()
+        {
+            Assert.Equal(new decimal(2.50), Money.USDollars(5.00).DividedBy(Money.USDollars(2.00)).DecimalValue(1, MidpointRounding.AwayFromZero));
+            Assert.Equal(new decimal(1.25), Money.USDollars(5.00).DividedBy(Money.USDollars(4.00)).DecimalValue(2, MidpointRounding.AwayFromZero));
+            Assert.Equal(new decimal(5), Money.USDollars(5.00).DividedBy(Money.USDollars(1.00)).DecimalValue(0, MidpointRounding.AwayFromZero));
+        }
+
+        [Fact]
+        public void TestApplyRatio()
+        {
+            Ratio oneThird = Ratio.Of(1, 3);
+            Money result = Money.USDollars(100.00).Applying(oneThird, 1, MidpointRounding.AwayFromZero);
+            Assert.Equal(Money.USDollars(33.30), result);
         }
 
         [Fact]
@@ -138,12 +212,11 @@ namespace DomainLanguage.Money.Tests
             Object objectNull = null;
             Assert.False(d2_51a.Equals(objectNull));
 
-            //This next test seems just like the previous, but it's not
-            //The Java Compiler early binds message sends and
-            //it will bind the next call to equals(Money) and
-            //the previous will bind to equals(Object)
-            //I renamed the original equals(Money) to
-            //equalsMoney(Money) to prevent wrong binding.
+            /* This next test seems just like the previous, but it's not.
+             * 
+             * The C# Compiler early binds message sends and it will bind the next call to 
+             * equals(Money) and the previous will bind to equals(Object).
+             */
             Money moneyNull = null;
             Assert.False(d2_51a.Equals(moneyNull));
         }

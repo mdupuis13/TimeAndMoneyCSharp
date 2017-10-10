@@ -3,26 +3,31 @@
  * free software is distributed under the "MIT" licence. See file licence.txt.
  * For more information, see http://timeandmoney.sourceforge.net.
  */
-using CSharp.Util.Currency;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Threading;
+using CSharp.Util.Currency;
+using Info.MartinDupuis.DomainLanguage.Base;
 
-namespace DomainLanguage.Money
+namespace Info.MartinDupuis.DomainLanguage.Money
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    [Serializable()]
     public class Money : IEquatable<Money>, IComparable<Money>
     {
-        private static readonly Currency CAD = Currency.GetByLetterCode("CAD");
-        private static readonly Currency EUR = Currency.GetByLetterCode("EUR");
-        private static readonly Currency USD = Currency.GetByLetterCode("USD");
-        private static readonly MidpointRounding DEFAULT_ROUNDING_MODE = MidpointRounding.ToEven;
+        [NonSerialized()] private static readonly Currency CAD = Currency.GetByLetterCode("CAD");
+        [NonSerialized()] private static readonly Currency EUR = Currency.GetByLetterCode("EUR");
+        [NonSerialized()] private static readonly Currency USD = Currency.GetByLetterCode("USD");
+        [NonSerialized()] private static readonly MidpointRounding DEFAULT_ROUNDING_MODE = MidpointRounding.ToEven;
 
         private decimal _amount;
         private Currency _currency;
 
-        #region Publics
+        #region Ctors
         /// <summary>
         /// The constructor does not complex computations and requires simple 
         /// inputs consistent with the class invariant. 
@@ -34,7 +39,9 @@ namespace DomainLanguage.Money
         /// <param name="amount"></param>
         public Money(decimal amount)
         {
-            this._currency = Currency.GetByLetterCode(CultureInfo.CurrentCulture.ThreeLetterISOLanguageName);
+            var currentRegion = new RegionInfo(CultureInfo.CurrentCulture.LCID);
+
+            this._currency = Currency.GetByLetterCode(currentRegion.ISOCurrencySymbol);
             this._amount = decimal.Round(amount, _currency.GetDefaultFractionDigits(), DEFAULT_ROUNDING_MODE);
         }
 
@@ -50,7 +57,9 @@ namespace DomainLanguage.Money
             this._currency = currency;
             this._amount = decimal.Round(amount, currency.GetDefaultFractionDigits(), DEFAULT_ROUNDING_MODE);
         }
+        #endregion
 
+        #region Publics
         #region Public Static
         /// <summary>
         /// This creation method is safe to use. It will adjust scale, but will not round off the amount.
@@ -79,7 +88,7 @@ namespace DomainLanguage.Money
         /// <summary>
         /// WARNING: Because of the indefinite precision of double, this method must round off the value.
         /// </summary>
-        /// <param name="dblAmount"></param>
+        /// <param name="amount"></param>
         /// <param name="currency"></param>
         /// <returns></returns>
         public static Money ValueOf(double amount, Currency currency)
@@ -90,7 +99,7 @@ namespace DomainLanguage.Money
         /// <summary>
         /// Because of the indefinite precision of double, this method must round off the value. This method gives the client control of the rounding mode.
         /// </summary>
-        /// <param name="dblAmount"></param>
+        /// <param name="amount"></param>
         /// <param name="currency"></param>
         /// <param name="roundingMode"></param>
         /// <returns></returns>
@@ -161,7 +170,28 @@ namespace DomainLanguage.Money
         {
             return Money.ValueOf(amount, EUR);
         }
+
         #endregion
+
+        /// <summary>
+        /// Adds all items in the collection received.
+        /// </summary>
+        /// <param name="monies">Collection of <code>Money</code> objects</param>
+        /// <returns><code>Money</code> object that is the sum of all items in <code>monies</code>.</returns>
+        public static Money Sum(ICollection<Money> monies)
+        {            
+            if (monies.Count == 0)
+                return new Money(0);
+
+            Money sum = new Money(0);
+
+            foreach (Money each in monies)
+            {
+                sum = sum.Plus(each);
+            }
+
+            return sum;
+        }
 
         #endregion
 
@@ -173,82 +203,307 @@ namespace DomainLanguage.Money
          * Here is an experimental approach, giving access with a 
          * warning label of sorts. Let us know how you like it.
          */
-        public decimal BreachEncapsulationOfAmount()
+
+        /// <summary>
+        /// Returns the RAW value of this Money object.
+        /// <para>This breaks encapsulation, but may be neeed for some 
+        /// functionnality yet unforeseen.
+        /// </para>
+        /// </summary>
+        public decimal BreachEncapsulationOfAmount
         {
-            return _amount;
+            get { return _amount; }
+            set { _amount = value; }    
         }
 
-        public Currency BreachEncapsulationOfCurrency()
+        /// <summary>
+        /// Returns the RAW currency of this Money object.
+        /// <para>This breaks encapsulation, but may be neeed for some 
+        /// functionnality yet unforeseen.
+        /// </para>
+        /// </summary>
+        public Currency BreachEncapsulationOfCurrency
         {
-            return _currency;
+            get { return _currency; }
+            set { _currency = value; }
         }
 
+        /// <summary>
+        /// Negates the value of this <code>Money's</code> value.
+        /// </summary>
+        /// <returns>A new <code>Money</code> object with this <code>Money's</code> value negated.</returns>
         public Money Negated()
         {
             return Money.ValueOf(decimal.Negate(_amount), _currency);
         }
 
+        /// <summary>
+        /// Multiply this object's value with a decimal applying default rounding behavior.
+        /// </summary>
+        /// <param name="factor"><seealso cref="decimal"/>decimal value to multiply with.</param>
+        /// <returns>New Money object.</returns>
         public Money Times(decimal factor)
         {
             return Times(factor, DEFAULT_ROUNDING_MODE);
         }
 
+
         /*
-         * TODO: BigDecimal.multiply() scale is sum of scales of two multiplied numbers. So what is scale of times?
+         * TODO: decimal.multiply() scale is sum of scales of two multiplied numbers. So what is scale of times?
          */
 
+        /// <summary>
+        /// Multiply this object's value with a decimal applying specified rounding behavior.
+        /// </summary>
+        /// <param name="factor"><seealso cref="decimal"/>decimal value to multiply with.</param>
+        /// <param name="roundingMode">MidpointRounding mode to apply after the operation.</param>
+        /// <returns>New Money object.</returns>
         public Money Times(decimal factor, MidpointRounding roundingMode)
         {
             return Money.ValueOf(decimal.Multiply(_amount, factor), _currency, roundingMode);
         }
 
+        /// <summary>
+        /// Multiply this object's value with a decimal applying the specified rounding behavior.
+        /// </summary>
+        /// <param name="amount"><seealso cref="double"/> value to multiply with.</param>
+        /// <param name="roundingMode">MidpointRounding mode to apply after the operation.</param>
+        /// <returns>New Money object.</returns>
         public Money Times(double amount, MidpointRounding roundingMode)
         {
             return Times(new decimal(amount), roundingMode);
         }
 
+        /// <summary>
+        /// Multiply this object's value with a decimal applying default rounding behavior.
+        /// </summary>
+        /// <param name="amount"><seealso cref="double"/> value to multiply with.</param>
+        /// <returns>New Money object.</returns>
         public Money Times(double amount)
         {
             return Times(new decimal(amount));
         }
 
-        public Money Times(int i)
+        /// <summary>
+        /// Multiply this object's value with an integer applying default rounding behavior.
+        /// </summary>
+        /// <param name="factor"><seealso cref="int"/> value to multiply with.</param>
+        /// <returns>New Money object.</returns>
+        public Money Times(int factor)
         {
-            return Times(new decimal(i));
+            return Times(new decimal(factor));
         }
 
+        /*
+         * TODO: Many apps require carrying extra precision in intermediate
+         * calculations. The use of Ratio is a beginning, but need a comprehensive
+         * solution. Currently, an invariant of Money is that the scale is the
+         * currencies standard scale, but this will probably have to be suspended or
+         * elaborated in intermediate calcs, or handled with defered calculations
+         * like Ratio.
+         */
+
+        /// <summary>
+        /// This probably should be Currency responsibility. Even then, it may need to be customized for specialty apps 
+        /// because there are other cases, where the smallest increment is not the smallest unit.
+        /// </summary>
+        /// <returns></returns>
+        public Money MinimumIncrement()
+        {
+            decimal one = new decimal(1);
+            decimal increment = decimal.Multiply(one, (decimal)System.Math.Pow(10, -_currency.GetDefaultFractionDigits()));
+            return Money.ValueOf(increment, _currency);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public Money Incremented()
+        {
+            return this.Plus(MinimumIncrement());
+        }
+
+        /// <summary>
+        /// Absolute value
+        /// </summary>
+        /// <returns>Absolute value of this object's instance.</returns>
+        public Money Abs()
+        {
+            return Money.ValueOf(System.Math.Abs(_amount), _currency);
+        }
+
+        /// <summary>
+        /// Adds the provided <code>Money</code> object to this one.
+        /// </summary>
+        /// <param name="other"><code>Money</code> object to add.</param>
+        /// <returns>New <code>Money</code> object.</returns>
         public Money Plus(Money other)
         {
             AssertHasSameCurrencyAs(other);
             return Money.ValueOf(decimal.Add(_amount, other._amount), _currency);
         }
 
+
+        /// <summary>
+        /// Subtracts the provided <code>Money</code> object from this one.
+        /// </summary>
+        /// <param name="other"><code>Money</code> object to subtract.</param>
+        /// <returns>New <code>Money</code> object.</returns>
+        public Money Minus(Money other)
+        {
+            return this.Plus(other.Negated());
+        }
+
+        /// <summary>
+        /// Divides the provided <code>Money</code> object to this one using the default MidpointRounding method.
+        /// </summary>
+        /// <param name="divisor"><code>Money</code> object to divide with.</param>
+        /// <returns>New <code>Money</code> object.</returns>
+        public Money DividedBy(double divisor)
+        {
+            return DividedBy(divisor, DEFAULT_ROUNDING_MODE);
+        }
+
+        /// <summary>
+        /// Divides the provided <seealso cref="double"/> value to this one using the provided MidpointRounding method.
+        /// </summary>
+        /// <param name="divisor"><seealso cref="double"/> value to divide with.</param>
+        /// <param name="roundingMode"><seealso cref="MidpointRounding"/> to use.</param>
+        /// <returns>New <code>Money</code> object.</returns>
+        public Money DividedBy(double divisor, MidpointRounding roundingMode)
+        {
+            return DividedBy(new decimal(divisor), roundingMode);
+        }
+
+        /// <summary>
+        /// Divides the provided <seealso cref="decimal"/> value to this one using the provided MidpointRounding method.
+        /// </summary>
+        /// <param name="divisor"><seealso cref="decimal"/> value to divide with.</param>
+        /// <param name="roundingMode"><seealso cref="MidpointRounding"/> to use.</param>
+        /// <returns>New <code>Money</code> object.</returns>
+        public Money DividedBy(decimal divisor, MidpointRounding roundingMode)
+        {
+            decimal newAmount = Decimal.Divide(_amount, divisor);
+            return Money.ValueOf(newAmount, _currency, roundingMode);
+        }
+
+        /// <summary>
+        /// Divides the provided <code>Money</code> object to this one returning the ratio of them.
+        /// </summary>
+        /// <param name="divisor"><code>Money</code> object to divide with.</param>
+        /// <returns><see cref="Ratio"/> object.</returns>
+        public Ratio DividedBy(Money divisor)
+        {
+            AssertHasSameCurrencyAs(divisor);
+            return Ratio.Of(_amount, divisor._amount);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <param name="roundingRule"></param>
+        /// <returns></returns>
+        public Money Applying(Ratio ratio, MidpointRounding roundingRule)
+        {
+            return Applying(ratio, _currency.GetDefaultFractionDigits(), roundingRule);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <param name="scale"></param>
+        /// <param name="roundingRule"></param>
+        /// <returns></returns>
+        public Money Applying(Ratio ratio, int scale, MidpointRounding roundingRule)
+        {
+            decimal newAmount = ratio.Times(_amount).DecimalValue(scale, roundingRule);
+            return Money.ValueOf(newAmount, _currency);
+        }
+
+        /// <summary>
+        /// Returns the RAW value of this Money object.
+        /// </summary>
+        /// <returns></returns>
         public decimal GetAmount()
         {
             return _amount;
         }
 
+        /// <summary>
+        /// Returns the RAW currency of this Money object.
+        /// </summary>
+        /// <returns></returns>
         public Currency GetCurrency()
         {
             return _currency;
         }
 
+        /// <summary>
+        /// Indicates if this <code>Money</code> object is negative or not.
+        /// </summary>
+        /// <returns><code>true</code> if the amount is &lt; 0, otherwise, <code>false</code>.</returns>
+        public bool IsNegative()
+        {
+            return _amount.CompareTo(new decimal(0)) < 0;
+        }
+
+        /// <summary>
+        /// Indicates if this <code>Money</code> object is positive or not.
+        /// </summary>
+        /// <returns><code>true</code> if the amount is &gt; or equal to 0, otherwise, <code>false</code>.</returns>
+        public bool IsPositive()
+        {
+            return _amount.CompareTo(new decimal(0)) >= 0;
+        }
+
+        /// <summary>
+        /// Indicates if this <code>Money</code> object is equal to zero value or not.
+        /// </summary>
+        /// <returns><code>true</code> if the amount is equal to 0, otherwise, <code>false</code>.</returns>
+        public bool IsZero()
+        {
+            return this.Equals(Money.ValueOf(0.0, _currency));
+        }
+
+        /// <summary>
+        /// Indicates if this <code>Money</code> object is greater than the <code>other</code> value.
+        /// </summary>
+        /// <param name="other">The <code>Money</code> object to compare with this instance, or <code>null</code>.</param>
+        /// <returns><code>true</code> if the object is &gt; <code>other</code>, otherwise, <code>false</code>.</returns>
         public bool IsGreaterThan(Money other)
         {
             return (CompareTo(other) > 0);
         }
 
+        /// <summary>
+        /// Indicates if this <code>Money</code> object is less than the <code>other</code> value.
+        /// </summary>
+        /// <param name="other">The <code>Money</code> object to compare with this instance, or <code>null</code>.</param>
+        /// <returns><code>true</code> if the object is &lt; <code>other</code>, otherwise, <code>false</code>.</returns>
         public bool IsLessThan(Money other)
         {
             return (CompareTo(other) < 0);
         }
 
+        // IComparable implementation
+        /// <summary>
+        /// Compares this instance to a specified <seealso cref="Object"/> and returns a comparison of their relative values.
+        /// </summary>
+        /// <param name="other">The object to compare with this instance, or <code>null</code>.</param>
+        /// <returns>A signed number indicating the relative values of this instance and <code>other</code>.</returns>
         public int CompareTo(Object other)
         {
             return CompareTo((Money)other);
         }
 
-        // IComparable implementation
+        /// <summary>
+        /// Compares this instance to a specified <seealso cref="Decimal"/> object and returns a comparison of their relative values.
+        /// </summary>
+        /// <param name="other">The <code>Money</code> object to compare with this instance, or <code>null</code>.</param>
+        /// <returns>A signed number indicating the relative values of this instance and <code>other</code>.</returns>
         public int CompareTo(Money other)
         {
             if (!HasSameCurrencyAs(other))
@@ -268,6 +523,11 @@ namespace DomainLanguage.Money
 
 
         #region IEquatable implementation
+        /// <summary>
+        /// Returns a value indicating whether this instance and a specified <seealso cref="Object"/> represent the same type and value.
+        /// </summary>
+        /// <param name="other">An object to compare to this instance.</param>
+        /// <returns><code>true</code> if <code>other</code> is equal to this instance; otherwise, <code>false</code>.</returns>
         public override bool Equals(Object other)
         {
             try
@@ -281,6 +541,11 @@ namespace DomainLanguage.Money
 
         }
 
+        /// <summary>
+        /// Returns a value indicating whether this instance and a specified <code>Money</code> represent the same type and value.
+        /// </summary>
+        /// <param name="other">An object to compare to this instance.</param>
+        /// <returns><code>true</code> if <code>other</code> is equal to this instance; otherwise, <code>false</code>.</returns>
         public bool Equals(Money other)
         {
             return
@@ -304,17 +569,19 @@ namespace DomainLanguage.Money
         #endregion
 
         #region Public overrides
+        /// <summary>
+        /// Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
             return _amount.GetHashCode();
         }
 
         /// <summary>
-        /// Returns a <see cref="System.String"/> that represents this instance.
+        /// Returns a <seealso cref="System.String"/> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String"/> that represents this instance.
-        /// </returns>
+        /// <returns>A <seealso cref="System.String"/> that represents this instance.</returns>
         public override string ToString()
         {
             var displayCulture = Thread.CurrentThread.CurrentCulture;
@@ -322,11 +589,9 @@ namespace DomainLanguage.Money
         }
 
         /// <summary>
-        /// Returns a <see cref="System.String"/> that represents this instance.
+        /// Returns a <seealso cref="System.String"/> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String"/> that represents this instance.
-        /// </returns>
+        /// <returns>A <seealso cref="System.String"/> that represents this instance.</returns>
         public string ToString(CultureInfo cultureInfo)
         {
             //var displayCulture = Thread.CurrentThread.CurrentCulture;
@@ -355,7 +620,7 @@ namespace DomainLanguage.Money
 
         /// <summary>
         /// Displays the value of this instance in a non-native culture, preserving
-        /// the characteristics of the native <see cref="CurrencyInfo" /> but respecting 
+        /// the characteristics of the native <see cref="CultureInfo" /> but respecting 
         /// target cultural formatting.
         /// </summary>
         /// <param name="displayCulture">The culture to display this money in</param>
@@ -370,7 +635,7 @@ namespace DomainLanguage.Money
             {
                 disambiguateMatchingSymbol = false;
             }
-
+            
             var nativeNumberFormat = nativeCulture.NumberFormat;
             nativeNumberFormat = (NumberFormatInfo)nativeNumberFormat.Clone();
 
